@@ -1,7 +1,7 @@
 #login to console
 provider "aws" {
 	region = "ap-south-1"
-	profile= rbterra
+	profile= "rbterra"
 }
 //////////////////////////////////////////////////////
 #creation of security group
@@ -82,10 +82,10 @@ resource "aws_instance" "webos" {
   depends_on = [null_resource.exec,aws_security_group.allow_tls,aws_security_group_rule.http,aws_security_group_rule.https]
   
   connection {
-    type     = "ssh"
-    user     = "ec2-user"
-    private_key  = data.local_file.key_file.content 
-    host     = aws_instance.webos.public_ip
+    type        = "ssh"
+    user        = "ec2-user"
+    private_key = data.local_file.key_file.content 
+    host        = aws_instance.webos.public_ip
   }
   provisioner "remote-exec" {
     inline = [
