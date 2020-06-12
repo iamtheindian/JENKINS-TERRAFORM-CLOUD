@@ -64,7 +64,7 @@ resource "null_resource" "exec" {
         command = "aws ec2 create-key-pair --key-name MyKeyPair --query 'KeyMaterial' --output text > /root/HybridCloud/Terraform/MyKeyPair.pem --profile rbterra"
   }
 }
-#reading data of key pair
+#reading data of key pair file
 data "local_file" "key_file" {
 	depends_on =[null_resource.exec]
     filename = "/root/HybridCloud/Terraform/MyKeyPair.pem"
@@ -84,9 +84,9 @@ resource "aws_instance" "webos" {
   }
   provisioner "remote-exec" {
     inline = [
-      "sudo yum install httpd -y",
+      "sudo yum install httpd git php -y",
       "sudo systemctl start httpd",
-          "sudo systemctl enable httpd",
+      "sudo systemctl enable httpd",
     ]
   }
 	
@@ -115,6 +115,9 @@ resource "aws_volume_attachment" "ebs_att" {
 }
 resource "null_resource" "nl1" {
 	depends_on = [ aws_volume_attachment.ebs_att ]
+	provisioner "local-exec" {
+		command = "scp -o StrictHostKeyChecking=no -r -i  /root/HybridCloud/Terraform/MyKeyPair.pem   /root/HybridCloud/Terraform/php  ec2-user@${aws_instance.webos.public_dns}:/home/ec2-user"
+	}
 	connection {
     type          = "ssh"
     user          = "ec2-user"
@@ -124,9 +127,13 @@ resource "null_resource" "nl1" {
   provisioner "remote-exec" {
     inline = [
 	"sudo rm -fr /var/www/html/*",
-     "sudo  mkfs.ext4 /dev/xvdd",
-         "sudo mount /dev/xvdd /var/www/html",
+    "sudo  mkfs.ext4 /dev/xvdd",
+    "sudo mount /dev/xvdd /var/www/html",
+	"sudo mv  -f /home/ec2-user/php/* /var/www/html/"
     ]
+  }
+  provisioner "local-exec" {
+	command = "curl ${aws_instance.webos.public_ip} "
   }
 }
 
@@ -178,7 +185,7 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
   enabled             = true
   is_ipv6_enabled     = true
   comment             = "creating"
-  default_root_object = "index.html"
+  default_root_object = "base.html"
 
   default_cache_behavior {
     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
