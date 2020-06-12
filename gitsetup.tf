@@ -58,10 +58,15 @@ resource "aws_security_group_rule" "https" {
 variable "ami_id" {
 	default = "ami-0447a12f28fddb066"
 }
-#creating key pair
+#creating key pair and deleting when destroy command executed
 resource "null_resource" "exec" {
 	provisioner "local-exec" {
         command = "aws ec2 create-key-pair --key-name MyKeyPair --query 'KeyMaterial' --output text > /root/HybridCloud/Terraform/MyKeyPair.pem --profile rbterra"
+  }
+  provisioner "local-exec" {
+    when    = "destroy"
+    command = "aws ec2 delete-key-pair --key-name MyKeyPair  --profile rbterra && rm -f MyKeyPair"
+	on_failure = "continue"
   }
 }
 #reading data of key pair file
@@ -114,7 +119,8 @@ resource "aws_volume_attachment" "ebs_att" {
   force_detach = true
 }
 resource "null_resource" "nl1" {
-	depends_on = [ aws_volume_attachment.ebs_att ]
+	depends_on = [ aws_volume_attachment.ebs_att,aws_s3_bucket.b,aws_cloudfront_distribution.s3_distribution ]
+	#sending local data to remote instance using scp
 	provisioner "local-exec" {
 		command = "scp -o StrictHostKeyChecking=no -r -i  /root/HybridCloud/Terraform/MyKeyPair.pem   /root/HybridCloud/Terraform/php  ec2-user@${aws_instance.webos.public_dns}:/home/ec2-user"
 	}
@@ -250,6 +256,10 @@ data "aws_iam_policy_document" "s3_policy" {
 resource "aws_s3_bucket_policy" "s3_bucket_pol" {
   bucket = "${aws_s3_bucket.b.id}"
   policy = "${data.aws_iam_policy_document.s3_policy.json}"
+}
+#deleting local files at the time of destroying
+resource "null_resource" "dstry"{
+
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////
 #final outputs
