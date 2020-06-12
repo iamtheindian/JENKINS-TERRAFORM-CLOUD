@@ -127,7 +127,7 @@ resource "null_resource" "nl1" {
 	connection {
     type          = "ssh"
     user          = "ec2-user"
-    private_key   =  data.local_file.key_file.content
+    private_key   = data.local_file.key_file.content
     host          = aws_instance.webos.public_ip
   }
   provisioner "remote-exec" {
@@ -145,7 +145,18 @@ resource "null_resource" "nl1" {
 
 
 /////////////////////////////////////////////////////
+#create snapshot of aws ebs volume
+resource "aws_ebs_snapshot" "snapshot" {
+  depends_on = [null_resource.nl1] 
+  volume_id  = "${aws_ebs_volume.myvol.id}"
 
+  tags = {
+    Name = "terraform ebs snap"
+  }
+}
+output "snapshot_id" {
+	value = aws_ebs_snapshot.snapshot.id
+}
 /////////////////////////////////////////////////////
 #variables and data
 
