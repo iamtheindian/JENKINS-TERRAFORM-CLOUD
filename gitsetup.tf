@@ -251,7 +251,7 @@ data "aws_iam_policy_document" "s3_policy" {
 }
 
 resource "aws_s3_bucket_policy" "s3_bucket_pol" {
-  depends_on = [aws_iam_policy_document.s3_policy]
+  depends_on = [aws_cloudfront_distribution.s3_distribution]
   bucket = "${aws_s3_bucket.b.id}"
   policy = "${data.aws_iam_policy_document.s3_policy.json}"
 }
