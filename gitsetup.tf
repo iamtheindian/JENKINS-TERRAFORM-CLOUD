@@ -102,6 +102,12 @@ resource "aws_instance" "webos" {
     Name = "TRedHat"
   }
 }
+#saving public ip to our local system
+resource "local_file" "instance_public_ip" {
+	depends_on  = [aws_instance.webos]
+    content     = aws_instance.webos.public_ip
+    filename    = "/root/HybridCloud/Terraform/public_ip.txt"
+}
 #creation of ebs volume
 resource "aws_ebs_volume" "myvol" {
   depends_on =[aws_instance.webos]
