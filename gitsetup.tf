@@ -56,6 +56,7 @@ resource "aws_security_group_rule" "https" {
 #creating instance
 #instance ami id
 variable "ami_id" {
+	#IMAGE NAME = Amazon Linux 2 AMI (HVM), SSD Volume Type
 	default = "ami-0447a12f28fddb066"
 }
 #creating key pair and deleting when destroy command executed
