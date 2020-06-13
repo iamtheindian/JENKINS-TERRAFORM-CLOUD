@@ -10,13 +10,13 @@ body {
 <body>
 <pre>
 <?php
-$filepath=`cat /root/HybridCloud/Terraform/domain_name.txt`; 
+$filepath=`cat /var/www/html/domain_name.txt`; 
 echo "<h2>PHP is Fun!</h2>";
 echo "Hello world!<br>";
 echo "I'm about to learn PHP!<br>";
-echo "This ", "image ", "is ", "get ", "by cloudfront disrtibution domain_name";
-echo "The Domain name is {$filepath}"
-echo "<img src="{$filepath}/MBM.png" height=100 width=100 />";
+echo "This ", "image ", "is ", "get ", "by cloudfront disrtibution domain_name<br>";
+echo "The Domain name is ${filepath} <br>";
+echo "<img src='https://${filepath}/MBM.png' height=100 width=100 />";
 ?>
 </pre>
 <p><a href="https://www.linkedin.com/in/rahul-bairwa-6b0552198">Visit My LinkedIn Profile!</a></p>

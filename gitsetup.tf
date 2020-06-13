@@ -122,7 +122,7 @@ resource "null_resource" "nl1" {
 	depends_on = [ aws_volume_attachment.ebs_att,aws_s3_bucket.b,aws_cloudfront_distribution.s3_distribution ]
 	#sending local data to remote instance using scp
 	provisioner "local-exec" {
-		command = "scp -o StrictHostKeyChecking=no -r -i  /root/HybridCloud/Terraform/MyKeyPair.pem   /root/HybridCloud/Terraform/php  ec2-user@${aws_instance.webos.public_dns}:/home/ec2-user"
+		command = "chmod 400 /root/HybridCloud/Terraform/MyKeyPair.pem && scp -o StrictHostKeyChecking=no -r -i  /root/HybridCloud/Terraform/MyKeyPair.pem   /root/HybridCloud/Terraform/php  ec2-user@${aws_instance.webos.public_dns}:/home/ec2-user"
 	}
 	connection {
     type          = "ssh"
@@ -236,10 +236,11 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
     cloudfront_default_certificate = true
   }
 }
+#saving cloudfront_domain_name in our local file
 resource "local_file" "cloud_dist_domain" {
 	depends_on  = [aws_cloudfront_distribution.s3_distribution]
     content     = aws_cloudfront_distribution.s3_distribution.domain_name
-    filename    = "/root/HybridCloud/Terraform/domain_name.txt"
+    filename    = "/root/HybridCloud/Terraform/php/domain_name.txt"
 }
 #updating bucket policy
 data "aws_iam_policy_document" "s3_policy" {
