@@ -1,1 +1,1 @@
-/root/HybridCloud/Terraform/img
+/Terraform/img

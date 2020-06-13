@@ -62,18 +62,18 @@ variable "ami_id" {
 #creating key pair and deleting when destroy command executed
 resource "null_resource" "exec" {
 	provisioner "local-exec" {
-        command = "aws ec2 create-key-pair --key-name MyKeyPair --query 'KeyMaterial' --output text > /root/HybridCloud/Terraform/MyKeyPair.pem --profile rbterra"
+        command = "aws ec2 create-key-pair --key-name MyKeyPair --query 'KeyMaterial' --output text > /Terraform/MyKeyPair.pem --profile rbterra"
   }
   provisioner "local-exec" {
     when    = "destroy"
-    command = "aws ec2 delete-key-pair --key-name MyKeyPair  --profile rbterra && rm -f MyKeyPair"
+    command = "aws ec2 delete-key-pair --key-name MyKeyPair  --profile rbterra && rm -f /Terraform/MyKeyPair.pem"
 	on_failure = "continue"
   }
 }
 #reading data of key pair file
 data "local_file" "key_file" {
 	depends_on =[null_resource.exec]
-    filename = "/root/HybridCloud/Terraform/MyKeyPair.pem"
+    filename = "/Terraform/MyKeyPair.pem"
 }
 #launching instance
 resource "aws_instance" "webos" {
@@ -106,7 +106,7 @@ resource "aws_instance" "webos" {
 resource "local_file" "instance_public_ip" {
 	depends_on  = [aws_instance.webos]
     content     = aws_instance.webos.public_ip
-    filename    = "/root/HybridCloud/Terraform/public_ip.txt"
+    filename    = "/Terraform/public_ip.txt"
 }
 #creation of ebs volume
 resource "aws_ebs_volume" "myvol" {
@@ -144,7 +144,7 @@ output "snapshot_id" {
 #variables and data
 
 data "local_file" "pathfi" {
-        filename = "/root/HybridCloud/Terraform/img/path.txt"
+        filename = "/Terraform/img/path.txt"
 }
 /////////////////////////////////////////////////////
 #buckets
@@ -224,7 +224,7 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
 resource "local_file" "cloud_dist_domain" {
 	depends_on  = [aws_cloudfront_distribution.s3_distribution]
     content     = aws_cloudfront_distribution.s3_distribution.domain_name
-    filename    = "/root/HybridCloud/Terraform/php/domain_name.txt"
+    filename    = "/Terraform/php/domain_name.txt"
 }
 #updating bucket policy
 data "aws_iam_policy_document" "s3_policy" {
@@ -260,7 +260,7 @@ resource "null_resource" "nl1" {
 	depends_on = [ aws_volume_attachment.ebs_att,aws_s3_bucket.b,aws_cloudfront_distribution.s3_distribution ]
 	#sending local data to remote instance using scp
 	provisioner "local-exec" {
-		command = "chmod 400 /root/HybridCloud/Terraform/MyKeyPair.pem && scp -o StrictHostKeyChecking=no -r -i  /root/HybridCloud/Terraform/MyKeyPair.pem   /root/HybridCloud/Terraform/php  ec2-user@${aws_instance.webos.public_dns}:/home/ec2-user"
+		command = "chmod 400 /Terraform/MyKeyPair.pem && scp -o StrictHostKeyChecking=no -r -i  /Terraform/MyKeyPair.pem   /Terraform/php  ec2-user@${aws_instance.webos.public_dns}:/home/ec2-user"
 	}
 	connection {
     type          = "ssh"
@@ -270,7 +270,7 @@ resource "null_resource" "nl1" {
   }
   provisioner "remote-exec" {
     inline = [
-	"sudo rm -fr /var/www/html/*",
+	"sudo rm -Rf /var/www/html/*",
     "sudo  mkfs.ext4 /dev/xvdd",
     "sudo mount /dev/xvdd /var/www/html",
 	"sudo mv  -f /home/ec2-user/php/* /var/www/html/"
