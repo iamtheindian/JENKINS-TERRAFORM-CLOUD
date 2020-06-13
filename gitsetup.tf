@@ -119,30 +119,6 @@ resource "aws_volume_attachment" "ebs_att" {
   instance_id = aws_instance.webos.id
   force_detach = true
 }
-resource "null_resource" "nl1" {
-	depends_on = [ aws_volume_attachment.ebs_att,aws_s3_bucket.b,aws_cloudfront_distribution.s3_distribution ]
-	#sending local data to remote instance using scp
-	provisioner "local-exec" {
-		command = "chmod 400 /root/HybridCloud/Terraform/MyKeyPair.pem && scp -o StrictHostKeyChecking=no -r -i  /root/HybridCloud/Terraform/MyKeyPair.pem   /root/HybridCloud/Terraform/php  ec2-user@${aws_instance.webos.public_dns}:/home/ec2-user"
-	}
-	connection {
-    type          = "ssh"
-    user          = "ec2-user"
-    private_key   = data.local_file.key_file.content
-    host          = aws_instance.webos.public_ip
-  }
-  provisioner "remote-exec" {
-    inline = [
-	"sudo rm -fr /var/www/html/*",
-    "sudo  mkfs.ext4 /dev/xvdd",
-    "sudo mount /dev/xvdd /var/www/html",
-	"sudo mv  -f /home/ec2-user/php/* /var/www/html/"
-    ]
-  }
-  provisioner "local-exec" {
-	command = "curl ${aws_instance.webos.public_ip} "
-  }
-}
 
 
 /////////////////////////////////////////////////////
@@ -192,6 +168,7 @@ locals {
   s3_origin_id = "myS3Origin"
 }
 resource "aws_cloudfront_distribution" "s3_distribution" {
+  depends_on = [aws_s3_bucket.b]
   origin {
     domain_name = "${aws_s3_bucket.b.bucket_regional_domain_name}"
     origin_id   = "${local.s3_origin_id}"
@@ -245,6 +222,7 @@ resource "local_file" "cloud_dist_domain" {
 }
 #updating bucket policy
 data "aws_iam_policy_document" "s3_policy" {
+  depends_on = [aws_cloudfront_distribution.s3_distribution]
   statement {
     actions   = ["s3:GetObject"]
     resources = ["${aws_s3_bucket.b.arn}/*"]
@@ -267,12 +245,39 @@ data "aws_iam_policy_document" "s3_policy" {
 }
 
 resource "aws_s3_bucket_policy" "s3_bucket_pol" {
+  depends_on = [aws_iam_policy_document.s3_policy]
   bucket = "${aws_s3_bucket.b.id}"
   policy = "${data.aws_iam_policy_document.s3_policy.json}"
 }
+#combined use of remote and local execution
+resource "null_resource" "nl1" {
+	depends_on = [ aws_volume_attachment.ebs_att,aws_s3_bucket.b,aws_cloudfront_distribution.s3_distribution ]
+	#sending local data to remote instance using scp
+	provisioner "local-exec" {
+		command = "chmod 400 /root/HybridCloud/Terraform/MyKeyPair.pem && scp -o StrictHostKeyChecking=no -r -i  /root/HybridCloud/Terraform/MyKeyPair.pem   /root/HybridCloud/Terraform/php  ec2-user@${aws_instance.webos.public_dns}:/home/ec2-user"
+	}
+	connection {
+    type          = "ssh"
+    user          = "ec2-user"
+    private_key   = data.local_file.key_file.content
+    host          = aws_instance.webos.public_ip
+  }
+  provisioner "remote-exec" {
+    inline = [
+	"sudo rm -fr /var/www/html/*",
+    "sudo  mkfs.ext4 /dev/xvdd",
+    "sudo mount /dev/xvdd /var/www/html",
+	"sudo mv  -f /home/ec2-user/php/* /var/www/html/"
+    ]
+  }
+  provisioner "local-exec" {
+	command = "curl ${aws_instance.webos.public_ip} "
+  }
+}
+
 #deleting local files at the time of destroying
 resource "null_resource" "dstry"{
-
+	#commands if you want to destroy something at local 
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////
 #final outputs
